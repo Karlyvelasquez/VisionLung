@@ -7,6 +7,7 @@ import os
 import io
 import base64
 import socket
+import re
 from pathlib import Path
 from datetime import datetime
 from typing import Tuple
@@ -46,6 +47,21 @@ model_config = None
 
 # Configurar OpenAI
 openai.api_key = os.getenv('OPENAI_API_KEY')
+
+
+def _is_openai_feedback_enabled() -> bool:
+    """Controla si el feedback de OpenAI se ejecuta en la misma request.
+
+    - true/1/yes/on: habilitado siempre
+    - false/0/no/off: deshabilitado siempre
+    - auto (default): habilitado solo si existe OPENAI_API_KEY
+    """
+    raw_value = os.getenv('ENABLE_OPENAI_FEEDBACK', 'auto').strip().lower()
+    if raw_value in {'1', 'true', 'yes', 'on'}:
+        return True
+    if raw_value in {'0', 'false', 'no', 'off'}:
+        return False
+    return bool(openai.api_key)
 
 
 def allowed_file(filename: str) -> bool:
@@ -201,9 +217,31 @@ def get_prediction(img_tensor: torch.Tensor) -> Tuple[float, str, str, float]:
     return probability, diagnosis, diagnosis_code, confidence
 
 
-def generate_openai_feedback(diagnosis: str, confidence: float, language: str = 'es') -> str:
+def _localized_diagnosis_label(diagnosis_code: str, language: str) -> str:
+    """Texto de diagnóstico en el idioma de la UI."""
+    code = (diagnosis_code or '').strip().upper()
+    is_en = language == 'en'
+
+    if code == 'PNEUMONIA_DETECTED':
+        return 'PNEUMONIA DETECTED' if is_en else 'NEUMONIA DETECTADA'
+    return 'NO PNEUMONIA' if is_en else 'SIN NEUMONIA'
+
+
+def _clean_markdown_text(text: str) -> str:
+    """Limpia markdown básico para mostrar texto plano en frontend."""
+    if not text:
+        return text
+
+    # Quitar énfasis markdown y normalizar bullets con '*'.
+    cleaned = text.replace('**', '')
+    cleaned = re.sub(r'^\s*\*\s+', '- ', cleaned, flags=re.MULTILINE)
+    return cleaned.strip()
+
+
+def generate_openai_feedback(diagnosis_code: str, confidence: float, language: str = 'es') -> str:
     """Generar feedback con OpenAI en el idioma solicitado por el frontend."""
     selected_language = 'en' if language == 'en' else 'es'
+    diagnosis_label = _localized_diagnosis_label(diagnosis_code, selected_language)
 
     if not openai.api_key:
         if selected_language == 'en':
@@ -220,7 +258,7 @@ def generate_openai_feedback(diagnosis: str, confidence: float, language: str = 
         prompt = f"""
         You are an expert radiologist. Provide clinical feedback for the following chest X-ray diagnosis:
 
-        Diagnosis: {diagnosis}
+        Diagnosis: {diagnosis_label}
         Model confidence: {confidence:.1%}
 
         Include in your answer:
@@ -229,6 +267,7 @@ def generate_openai_feedback(diagnosis: str, confidence: float, language: str = 
         3. Follow-up recommendations or next steps
 
         Keep a professional and concise tone (max 300 words).
+        Output plain text only (no markdown, no asterisks for emphasis, no **bold** formatting).
         This is a decision-support model and does not replace professional radiologist assessment.
         """
         system_message = (
@@ -239,7 +278,7 @@ def generate_openai_feedback(diagnosis: str, confidence: float, language: str = 
         prompt = f"""
         Eres un radiólogo experto. Proporciona un feedback clínico sobre el siguiente diagnóstico de radiografía de tórax:
 
-        Diagnóstico: {diagnosis}
+        Diagnóstico: {diagnosis_label}
         Confianza del modelo: {confidence:.1%}
 
         Proporciona un análisis que incluya:
@@ -248,6 +287,7 @@ def generate_openai_feedback(diagnosis: str, confidence: float, language: str = 
         3. Recomendaciones de seguimiento o próximos pasos
 
         Mantén el tono profesional y conciso (máximo 300 palabras).
+        Devuelve texto plano (sin markdown, sin asteriscos para énfasis y sin formato **negrita**).
         Recuerda que este es un modelo de apoyo diagnóstico y no reemplaza la evaluación clínica del radiólogo.
         """
         system_message = (
@@ -257,7 +297,7 @@ def generate_openai_feedback(diagnosis: str, confidence: float, language: str = 
     
     try:
         response = openai.ChatCompletion.create(
-            model="gpt-4",
+            model=os.getenv('OPENAI_MODEL', 'gpt-4o-mini'),
             messages=[
                 {"role": "system", "content": system_message},
                 {"role": "user", "content": prompt}
@@ -266,7 +306,7 @@ def generate_openai_feedback(diagnosis: str, confidence: float, language: str = 
             temperature=0.7,
             request_timeout=30
         )
-        return response['choices'][0]['message']['content']
+        return _clean_markdown_text(response['choices'][0]['message']['content'])
     except Exception as e:
         print(f"Error con OpenAI: {str(e)}")
         return f"Error generando feedback: {str(e)}"
@@ -346,8 +386,15 @@ def predict():
         # Convertir imagen a base64 para mostrar
         img_base64 = image_to_base64(img_display)
         
-        # Generar feedback con OpenAI
-        feedback = generate_openai_feedback(diagnosis, confidence, language)
+        # Generar feedback (opcional) sin bloquear siempre la inferencia principal.
+        if _is_openai_feedback_enabled():
+            feedback = generate_openai_feedback(diagnosis_code, confidence, language)
+        else:
+            feedback = (
+                "AI-assisted clinical feedback is disabled for this deployment."
+                if language == 'en'
+                else "El feedback clinico asistido por IA esta deshabilitado en este despliegue."
+            )
         
         # Limpiar archivo temporal
         filepath.unlink()

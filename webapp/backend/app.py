@@ -88,8 +88,11 @@ def load_model():
         state_dict = checkpoint.get('model_state_dict')
         model_config = checkpoint.get('config', {})
         
-        # Importar la arquitectura del modelo
-        from models import SoftAttention, PneumoniaClassifier
+        # Importar la arquitectura del modelo de forma compatible con local y Render.
+        try:
+            from backend.models import SoftAttention, PneumoniaClassifier
+        except ModuleNotFoundError:
+            from models import SoftAttention, PneumoniaClassifier
         
         # Recrear modelo
         model = PneumoniaClassifier(

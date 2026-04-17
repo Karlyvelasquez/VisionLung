@@ -62,3 +62,15 @@ FLASK_PORT=8000
 ## Nota
 
 El sistema es una herramienta de apoyo diagnostico y no reemplaza evaluacion medica profesional.
+
+## Docker
+
+Para levantar la app en Docker desde la raiz del repositorio:
+
+```bash
+docker compose up --build
+```
+
+La aplicacion quedara en `http://localhost:18080`.
+
+Si quieres activar el feedback clinico con IA dentro del contenedor, exporta `OPENAI_API_KEY` en tu shell o usa `docker compose --env-file webapp/.env up --build` tras crear tu archivo local desde `webapp/.env.example`.

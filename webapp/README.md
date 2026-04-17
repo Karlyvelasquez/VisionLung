@@ -39,7 +39,7 @@ chmod +x start.sh
 ./start.sh
 ```
 
-El servidor se iniciara en la URL mostrada por consola (por defecto `http://127.0.0.1:8000`).
+En Docker, la app quedara disponible en `http://localhost:18080`.
 
 ## Variables de entorno
 
@@ -56,6 +56,37 @@ FLASK_PORT=8000
 - `GET /` interfaz web
 - `POST /api/predict` prediccion sobre imagen (`file` en multipart/form-data)
 - `GET /api/health` estado del servicio
+
+## Despliegue en Render
+
+Configuracion recomendada para el formulario de Render:
+
+- `Language`: Python 3
+- `Branch`: main
+- `Region`: Oregon (US West)
+- `Root Directory`: webapp
+- `Build Command`: `git lfs pull; pip install -r requirements.txt`
+- `Start Command`: `gunicorn backend.app:app --bind 0.0.0.0:$PORT --workers 1 --threads 4 --timeout 300`
+
+Variables de entorno en Render:
+
+- `OPENAI_API_KEY` = tu clave
+- `FLASK_HOST` = `0.0.0.0`
+- `PYTHON_VERSION` = `3.11.9`
+
+Nota: el modelo `outputs/best_model.pkl` se sube con Git LFS, por eso se usa `git lfs pull` en el build.
+
+## Docker local
+
+Desde la raiz del repositorio:
+
+```bash
+docker compose up --build
+```
+
+Esto construye una imagen con Flask, React servido por Flask y el modelo cargado desde `outputs/best_model.pkl`.
+
+Si vas a usar OpenAI dentro del contenedor, exporta `OPENAI_API_KEY` en tu shell o ejecuta `docker compose --env-file webapp/.env up --build` despues de crear tu archivo local desde `webapp/.env.example`.
 
 ## Nota legal
 

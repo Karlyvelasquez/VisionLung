@@ -1,0 +1,15 @@
+services:
+  webapp:
+    build:
+      context: .
+      dockerfile: webapp/Dockerfile
+    ports:
+      - "18080:8000"
+    environment:
+      FLASK_HOST: 0.0.0.0
+      FLASK_PORT: 8000
+      ENABLE_OPENAI_FEEDBACK: auto
+      OPENAI_MODEL: gpt-4o-mini
+    volumes:
+      - ./webapp/backend/uploads:/app/webapp/backend/uploads
+    restart: unless-stopped

@@ -10,6 +10,8 @@ services:
       FLASK_PORT: 8000
       ENABLE_OPENAI_FEEDBACK: auto
       OPENAI_MODEL: gpt-4o-mini
+    env_file:
+      - webapp/.env
     volumes:
       - ./webapp/backend/uploads:/app/webapp/backend/uploads
     restart: unless-stopped

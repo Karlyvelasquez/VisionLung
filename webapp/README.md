@@ -86,7 +86,7 @@ docker compose up --build
 
 Esto construye una imagen con Flask, React servido por Flask y el modelo cargado desde `outputs/best_model.pkl`.
 
-Si vas a usar OpenAI dentro del contenedor, exporta `OPENAI_API_KEY` en tu shell o ejecuta `docker compose --env-file webapp/.env up --build` despues de crear tu archivo local desde `webapp/.env.example`.
+Si vas a usar OpenAI dentro del contenedor, crea `webapp/.env` desde `webapp/.env.example` y coloca tu `OPENAI_API_KEY`. El compose ya lo carga automaticamente.
 
 ## Nota legal
 

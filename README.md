@@ -73,4 +73,4 @@ docker compose up --build
 
 La aplicacion quedara en `http://localhost:18080`.
 
-Si quieres activar el feedback clinico con IA dentro del contenedor, exporta `OPENAI_API_KEY` en tu shell o usa `docker compose --env-file webapp/.env up --build` tras crear tu archivo local desde `webapp/.env.example`.
+Si quieres activar el feedback clinico con IA dentro del contenedor, crea `webapp/.env` desde `webapp/.env.example` y coloca tu `OPENAI_API_KEY`. El `docker compose` ya lo carga automaticamente.

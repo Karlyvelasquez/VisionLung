@@ -205,6 +205,17 @@ def generate_openai_feedback(diagnosis: str, confidence: float, language: str = 
     """Generar feedback con OpenAI en el idioma solicitado por el frontend."""
     selected_language = 'en' if language == 'en' else 'es'
 
+    if not openai.api_key:
+        if selected_language == 'en':
+            return (
+                "OpenAI clinical feedback is not configured in this deployment. "
+                "Set OPENAI_API_KEY to enable AI-assisted analysis."
+            )
+        return (
+            "El feedback clinico de OpenAI no esta configurado en este despliegue. "
+            "Define OPENAI_API_KEY para habilitar el analisis asistido."
+        )
+
     if selected_language == 'en':
         prompt = f"""
         You are an expert radiologist. Provide clinical feedback for the following chest X-ray diagnosis:
@@ -252,7 +263,8 @@ def generate_openai_feedback(diagnosis: str, confidence: float, language: str = 
                 {"role": "user", "content": prompt}
             ],
             max_tokens=500,
-            temperature=0.7
+            temperature=0.7,
+            request_timeout=30
         )
         return response['choices'][0]['message']['content']
     except Exception as e:
@@ -277,6 +289,18 @@ def index():
 @app.route('/favicon.ico')
 def favicon():
     """Evita 404 en favicon cuando el navegador lo solicita por defecto."""
+    return ('', 204)
+
+
+@app.route('/apple-touch-icon.png')
+def apple_touch_icon():
+    """Evita 404 de icono iOS cuando no existe archivo dedicado."""
+    return ('', 204)
+
+
+@app.route('/site.webmanifest')
+def site_webmanifest():
+    """Evita 404 de manifest cuando no se define PWA."""
     return ('', 204)
 
 

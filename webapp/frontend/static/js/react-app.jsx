@@ -399,19 +399,43 @@ function App() {
             formData.append("file", file);
             formData.append("language", language);
 
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 120000);
+
             const response = await fetch("/api/predict", {
                 method: "POST",
-                body: formData
+                body: formData,
+                signal: controller.signal
             });
 
-            const payload = await response.json();
+            clearTimeout(timeoutId);
+
+            let payload;
+            const contentType = response.headers.get("content-type") || "";
+            if (contentType.includes("application/json")) {
+                payload = await response.json();
+            } else {
+                const raw = await response.text();
+                throw new Error(raw || t.errors.generic);
+            }
+
             if (!response.ok) {
                 throw new Error(payload.error || t.errors.generic);
+            }
+
+            if (!payload?.success) {
+                throw new Error(payload?.error || t.errors.generic);
             }
 
             setResult(payload);
             diagnosticRef.current?.scrollIntoView({ behavior: "smooth", block: "start" });
         } catch (err) {
+            if (err?.name === "AbortError") {
+                setError(language === "en"
+                    ? "The request took too long. Please try again."
+                    : "La solicitud demoro demasiado. Intenta de nuevo.");
+                return;
+            }
             setError(err.message || t.errors.generic);
         } finally {
             setBusy(false);

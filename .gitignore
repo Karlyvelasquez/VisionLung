@@ -1,0 +1,13 @@
+# Python cache
+**/__pycache__/
+*.py[cod]
+
+# Local virtual env
+webapp/venv/
+
+# Runtime uploads
+webapp/backend/uploads/*
+!webapp/backend/uploads/.gitkeep
+
+# Local env files
+webapp/.env

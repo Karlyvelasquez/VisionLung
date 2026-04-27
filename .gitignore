@@ -11,3 +11,20 @@ webapp/backend/uploads/*
 
 # Local env files
 webapp/.env
+
+# Training artifacts and raw datasets (not needed for web app runtime)
+chest_xray_data/
+**/__MACOSX/
+**/.DS_Store
+**/._*
+
+# Notebooks and temporary analysis files
+*.ipynb
+
+# Common archive downloads
+*.zip
+
+# Outputs not required by the web app runtime
+outputs/*.png
+outputs/ablation_bilstm_only.pkl
+outputs/baseline_resnet50.pkl

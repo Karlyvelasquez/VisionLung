@@ -72,3 +72,36 @@ class PneumoniaClassifier(nn.Module):
         context, _ = self.attention(lstm_out)
         logit = self.classifier(context)
         return logit
+
+
+class ResNet50AttentionOnly(nn.Module):
+    """ResNet50 + Soft-Attention for CXR binary classification."""
+
+    def __init__(self, dropout: float = 0.6):
+        super().__init__()
+
+        # Use weights=None to avoid internet download at runtime;
+        # checkpoint loading restores trained weights.
+        backbone = models.resnet50(weights=None)
+        self.backbone = nn.Sequential(*list(backbone.children())[:-1])
+
+        self.energy = nn.Linear(32, 1)
+        self.classifier = nn.Sequential(
+            nn.Linear(32, 256),
+            nn.ReLU(),
+            nn.Dropout(dropout),
+            nn.Linear(256, 1),
+        )
+
+    def forward(self, x: torch.Tensor) -> torch.Tensor:
+        batch = x.size(0)
+        features = self.backbone(x).flatten(1)
+        seq = features.view(batch, 64, 32)
+
+        energy = torch.tanh(self.energy(seq))
+        alpha = torch.softmax(energy, dim=1)
+        context = torch.sum(seq * alpha, dim=1)
+
+        self.attention_weights = alpha.squeeze(-1)
+        logit = self.classifier(context)
+        return logit

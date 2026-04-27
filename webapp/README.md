@@ -1,11 +1,11 @@
 ﻿# VisionLung WebApp
 
-Aplicacion web de inferencia para detectar neumonia en radiografias de torax usando un modelo `.pkl` preentrenado.
+Aplicacion web de inferencia para detectar neumonia en radiografias de torax usando el modelo `.pkl` de ablation Attention-only preentrenado.
 
 ## Requisitos
 
 - Python 3.10+
-- `../outputs/best_model.pkl`
+- `../outputs/ablation_attention_only.pkl`
 - API key de OpenAI (opcional, para feedback clinico)
 
 ## Estructura
@@ -74,7 +74,7 @@ Variables de entorno en Render:
 - `FLASK_HOST` = `0.0.0.0`
 - `PYTHON_VERSION` = `3.11.9`
 
-Nota: el modelo `outputs/best_model.pkl` se sube con Git LFS, por eso se usa `git lfs pull` en el build.
+Nota: el modelo `outputs/ablation_attention_only.pkl` se sube con Git LFS, por eso se usa `git lfs pull` en el build.
 
 ## Docker local
 
@@ -84,9 +84,19 @@ Desde la raiz del repositorio:
 docker compose up --build
 ```
 
-Esto construye una imagen con Flask, React servido por Flask y el modelo cargado desde `outputs/best_model.pkl`.
+Esto construye una imagen con Flask, React servido por Flask y el modelo cargado desde `outputs/ablation_attention_only.pkl`.
 
 Si vas a usar OpenAI dentro del contenedor, crea `webapp/.env` desde `webapp/.env.example` y coloca tu `OPENAI_API_KEY`. El compose ya lo carga automaticamente.
+
+### Modo desarrollo en caliente
+
+Para editar código y ver cambios sin reconstruir la imagen, usa el compose de desarrollo:
+
+```bash
+docker compose -f docker-compose.dev.yml up --build
+```
+
+Ese perfil monta `webapp/` y `outputs/` como volúmenes y arranca Flask con recarga automática.
 
 ## Nota legal
 

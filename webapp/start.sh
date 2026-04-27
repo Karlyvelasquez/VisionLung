@@ -63,14 +63,14 @@ if [ ! -f ".env" ]; then
 fi
 
 # Verificar modelo
-MODEL_PATH="../outputs/best_model.pkl"
+MODEL_PATH="../outputs/ablation_attention_only.pkl"
 if [ ! -f "$MODEL_PATH" ]; then
     echo "[ERROR] Modelo no encontrado en $MODEL_PATH"
     echo "Ejecuta primero el notebook: pneumonia_classifier.ipynb"
     echo ""
     exit 1
 fi
-echo "[OK] Modelo detectado"
+echo "[OK] Modelo Attention-only detectado"
 echo ""
 
 # Iniciar aplicación

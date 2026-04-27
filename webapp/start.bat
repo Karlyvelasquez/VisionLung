@@ -65,15 +65,15 @@ if not exist ".env" (
 )
 
 REM Verificar modelo
-set MODEL_PATH=..\outputs\best_model.pkl
+set MODEL_PATH=..\outputs\ablation_attention_only.pkl
 if not exist "%MODEL_PATH%" (
-    echo [ERROR] Modelo no encontrado en ..\outputs\best_model.pkl
+    echo [ERROR] Modelo no encontrado en ..\outputs\ablation_attention_only.pkl
     echo Ejecuta primero el notebook: pneumonia_classifier.ipynb
     echo.
     pause
     exit /b 1
 )
-echo [OK] Modelo detectado
+echo [OK] Modelo Attention-only detectado
 echo.
 
 REM Iniciar aplicación

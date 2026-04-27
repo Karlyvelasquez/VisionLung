@@ -34,7 +34,7 @@ app = Flask(
 app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  # 50MB max
 
 # Configuración
-MODEL_PATH = BASE_DIR.parent / "outputs" / "best_model.pkl"
+MODEL_PATH = BASE_DIR.parent / "outputs" / "ablation_attention_only.pkl"
 UPLOAD_FOLDER = Path(__file__).parent / "uploads"
 ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg'}
 
@@ -106,18 +106,16 @@ def load_model():
         
         # Importar la arquitectura del modelo de forma compatible con local y Render.
         try:
-            from backend.models import SoftAttention, PneumoniaClassifier
+            from backend.models import ResNet50AttentionOnly
         except ModuleNotFoundError:
-            from models import SoftAttention, PneumoniaClassifier
+            from models import ResNet50AttentionOnly
         
         # Recrear modelo
-        model = PneumoniaClassifier(
-            lstm_hidden=model_config.get('lstm_hidden', 128),
-            feature_dim=model_config.get('feature_dim', 256),
+        model = ResNet50AttentionOnly(
             dropout=model_config.get('dropout', 0.6)
         )
         
-        model.load_state_dict(state_dict)
+        model.load_state_dict(state_dict, strict=False)
         model.to(device)
         model.eval()
         
@@ -162,7 +160,8 @@ def validate_chest_xray_image(img_path: str) -> Tuple[bool, str]:
         gray = np.array(img.convert('L'), dtype=np.float32)
         contrast_std = float(gray.std())
 
-        # 3) Validar proporción razonable (evita panorámicas/fotos extrañas).
+        # 3) Validar proporción razonable, pero sin rechazar radiografías válidas
+        # que vienen recortadas, rotadas o con márgenes clínicos amplios.
         w, h = img.size
         aspect_ratio = float(w / h) if h else 1.0
 
@@ -177,9 +176,9 @@ def validate_chest_xray_image(img_path: str) -> Tuple[bool, str]:
                 "No se puede analizar: la imagen no tiene el contraste típico de una radiografía de tórax."
             )
 
-        if not (0.55 <= aspect_ratio <= 1.8):
+        if not (0.35 <= aspect_ratio <= 3.0):
             return False, (
-                "No se puede analizar: la proporción de la imagen no coincide con una radiografía de tórax."
+                "No se puede analizar: la proporción de la imagen es demasiado extrema para una radiografía de tórax."
             )
 
         # 4) Validación estructural simple sin dependencia de dataset local.
